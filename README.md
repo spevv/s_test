@@ -2,6 +2,7 @@
 
 Данный псевдокод не является рабочим, цель задания:
 
+- создать форк от текущего проекта
 - сделать код ревью app/Http/Controllers/Auth/RegisterController.php
 - сделать рефакторинг app/Http/Controllers/Auth/RegisterController.php
 - написать юнит тесты на зарефакторенный код
