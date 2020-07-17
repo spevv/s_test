@@ -4,7 +4,7 @@
 
 - создать форк от текущего проекта
 - сделать код ревью app/Http/Controllers/Auth/RegisterController.php
-- сделать рефакторинг app/Http/Controllers/Auth/RegisterController.php
+- сделать рефакторинг app/Http/Controllers/Auth/RegisterController.php на основе той бизнес логики, что есть сейчас
 - написать юнит тесты на зарефакторенный код
 - создать пул реквест
 - комментарии по код ревью оставить в пул реквесте
