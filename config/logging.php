@@ -19,6 +19,11 @@ return [
 
     'default' => env('LOG_CHANNEL', 'stack'),
 
+    'registrationSuccessChanel' => env('LOG_CHANNEL_REGISTRATION_SUCCESS', 'registrationSuccess'),
+
+    'registrationErrorChanel' => env('LOG_CHANNEL_REGISTRATION_ERROR', 'registrationError'),
+
+
     /*
     |--------------------------------------------------------------------------
     | Log Channels
@@ -98,6 +103,20 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'registrationSuccess' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/registration/success.log'),
+            'level' => 'debug',
+            'days' => 14,
+        ],
+
+        'registrationError' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/registration/error.log'),
+            'level' => 'debug',
+            'days' => 14,
         ],
     ],
 

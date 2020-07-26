@@ -14,4 +14,16 @@ class BannedDomain  extends Model
     protected $fillable = [
         'domain'
     ];
+
+    /**
+     * Is banned
+     *
+     * @param string $domain
+     *
+     * @return bool
+     */
+    public function isBanned(string $domain): bool
+    {
+        return $this->newQuery()->where('domain', $domain)->exists();
+    }
 }

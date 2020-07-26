@@ -3,82 +3,45 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\BannedDomain;
+use App\Http\Requests\RegistrationRequest;
 use App\Mail\ConfirmationEmail;
-use App\UserList;
-use Illuminate\Http\Request;
 use App\User;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\JsonResponse;
 
+/**
+ * Class RegisterController
+ *
+ * @package App\Http\Controllers\Auth
+ */
 class RegisterController extends Controller
 {
-    private const DISABLED_IPS = [
-        '123.12.12.342',
-        '121.1.5.11'
-    ];
-
-    public function create(Request $request)
+    /**
+     * Create new user
+     *
+     * @param RegistrationRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function create(RegistrationRequest $request)
     {
-        $data = $request->all();
-        if (!empty($data['email']) && !empty($data['password']) && !in_array($this->getIpAddress(),
-                self::DISABLED_IPS)) {
-            $emailParts = explode('@', $data['email']);
-            if (!$this->is_banned_domain($emailParts[1])) {
-                $user = new User();
-                $user->name = $data['name'];
-                $user->email = $data['email'];
-                $user->password = bcrypt($data['password']);
-                $user->save();
+        $user = new User($request->only('name', 'email', 'password'));
+        $message = sprintf('Name: %s, email: %s', $request->get('name'), $request->get('email'));
+        if(!$user->save()) {
+            Log::channel(Config::get('registrationErrorChanel'))->error($message);
 
-                if ($user) {
-                    Mail::to($user)->send(new ConfirmationEmail());
-
-                    $user_list = new UserList();
-                    $user_list->user_id = $user->id;
-                    $user_list->name = 'First email addresses list';
-                    $user_list->save();
-
-                    file_put_contents(storage_path("logs/registration-success" . date('Y-m-d') . '.log'),
-                        print_r($data, true), FILE_APPEND | LOCK_EX);
-
-                    return response()->json('ok', 500);
-                }
-            }
+            throw new RegistrationException('Can\'t save user data.'); // TODO create RegistrationException
         }
 
-        file_put_contents(storage_path("logs/registration-error" . date('Y-m-d') . '.log'), print_r($data, true),
-            FILE_APPEND | LOCK_EX);
+        // TODO better solution to use Observer pattern or create one event for group below
+        Mail::to($user)->send(new ConfirmationEmail());
+        // TODO create UserListEvent
+        Event::dispatch(new UserListEvent()); // event(new UserListEvent()); in this class will be logic UserList()
+        Log::channel(Config::get('registrationSuccessChanel'))->info($message);
 
-        return response()->json('error', 500);
-    }
-
-    private function getIpAddress(): string
-    {
-        $ip = '';
-        foreach ([
-                     'HTTP_CF_CONNECTING_IP',
-                     'REMOTE_ADDR',
-                     'HTTP_CLIENT_IP',
-                     'HTTP_X_FORWARDED_FOR',
-                     'HTTP_X_FORWARDED',
-                     'HTTP_X_CLUSTER_CLIENT_IP',
-                     'HTTP_FORWARDED_FOR',
-                     'HTTP_FORWARDED'
-                 ] as $key) {
-            if (array_key_exists($key, $_SERVER) === true) {
-                foreach (explode(',', $_SERVER[$key]) as $ip) {
-                    if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
-                        return $ip;
-                    }
-                }
-            }
-        }
-
-        return $ip;
-    }
-
-    private function is_banned_domain($domain): bool
-    {
-        return in_array($domain, BannedDomain::all()->toArray(), true);
+        return response()->json(['status' => 'success'], 201);
     }
 }
